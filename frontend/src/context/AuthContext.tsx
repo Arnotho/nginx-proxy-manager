@@ -25,6 +25,7 @@ export interface AuthContextType {
 	cancelTwoFactor: () => void;
 	loginAs: (id: number) => Promise<void>;
 	logout: () => void;
+	loginWithToken: (response: TokenResponse) => void;
 	token?: string;
 }
 
@@ -66,6 +67,11 @@ function AuthProvider({ children, tokenRefreshInterval = 5 * 60 * 1000 }: Props)
 
 	const cancelTwoFactor = () => {
 		setTwoFactorChallenge(null);
+	};
+
+	// Used by OidcCallback to apply a token received via redirect without a page reload.
+	const loginWithToken = (response: TokenResponse) => {
+		handleTokenUpdate(response);
 	};
 
 	const loginAs = async (id: number) => {
@@ -110,6 +116,7 @@ function AuthProvider({ children, tokenRefreshInterval = 5 * 60 * 1000 }: Props)
 		cancelTwoFactor,
 		loginAs,
 		logout,
+		loginWithToken,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

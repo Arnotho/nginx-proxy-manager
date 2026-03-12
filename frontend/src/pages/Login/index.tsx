@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Field, Form, Formik } from "formik";
 import { useEffect, useRef, useState } from "react";
 import Alert from "react-bootstrap/Alert";
@@ -6,6 +7,7 @@ import { useAuthState } from "src/context";
 import { useHealth } from "src/hooks";
 import { intl, T } from "src/locale";
 import { validateEmail, validateString } from "src/modules/Validations";
+import { getOidcConfig } from "src/api/backend";
 import styles from "./index.module.css";
 
 function TwoFactorForm() {
@@ -82,6 +84,13 @@ function LoginForm() {
 	const [formErr, setFormErr] = useState("");
 	const { login } = useAuthState();
 
+	const oidcQuery = useQuery({
+		queryKey: ["oidc-config"],
+		queryFn: getOidcConfig,
+		staleTime: 5 * 60 * 1000,
+	});
+	const oidcEnabled = oidcQuery.data?.enabled ?? false;
+
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
 		setFormErr("");
 		try {
@@ -92,6 +101,12 @@ function LoginForm() {
 			}
 		}
 		setSubmitting(false);
+	};
+
+	const handleOidcLogin = () => {
+		// Redirect to backend OIDC initiation endpoint.
+		// The backend will issue a 302 to the IdP and later redirect back to /oidc-callback.
+		window.location.href = "/api/tokens/oidc";
 	};
 
 	useEffect(() => {
@@ -162,6 +177,16 @@ function LoginForm() {
 					</Form>
 				)}
 			</Formik>
+			{oidcEnabled && (
+				<>
+					<div className="hr-text my-3">
+						<T id="login.oidc-divider" />
+					</div>
+					<Button type="button" fullWidth actionType="secondary" onClick={handleOidcLogin}>
+						<T id="login.oidc-button" />
+					</Button>
+				</>
+			)}
 		</>
 	);
 }

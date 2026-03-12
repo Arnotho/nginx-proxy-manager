@@ -479,6 +479,15 @@
 	"login.title": {
 		"defaultMessage": "Login to your account"
 	},
+	"login.oidc-button": {
+		"defaultMessage": "Sign in with SSO"
+	},
+	"login.oidc-divider": {
+		"defaultMessage": "or"
+	},
+	"login.oidc-error": {
+		"defaultMessage": "SSO login failed: {message}"
+	},
 	"nginx-config.label": {
 		"defaultMessage": "Custom Nginx Configuration"
 	},
