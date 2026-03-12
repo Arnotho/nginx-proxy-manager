@@ -245,6 +245,38 @@ const getPrivateKey = () => {
 };
 
 /**
+ * Returns OIDC configuration from environment variables.
+ * All fields are optional; enabled is false when OIDC_ISSUER_URL is not set.
+ *
+ * Required env vars to enable OIDC:
+ *   OIDC_ISSUER_URL    - e.g. https://accounts.google.com
+ *   OIDC_CLIENT_ID     - client id registered in the IdP
+ *   OIDC_CLIENT_SECRET - client secret (can be empty for public clients)
+ *
+ * Optional:
+ *   OIDC_SCOPE             - default: "openid email profile"
+ *   OIDC_NAME_CLAIM        - which ID token claim to use as display name, default: "name"
+ *   OIDC_AUTO_CREATE_USERS - "true" to create a local user on first OIDC login, default: true
+ *
+ * @returns {{ enabled: boolean, issuerUrl: string, clientId: string, clientSecret: string, scope: string, nameClaim: string, autoCreateUsers: boolean }}
+ */
+const getOidcConfig = () => {
+	const issuerUrl = process.env.OIDC_ISSUER_URL || null;
+	const clientId = process.env.OIDC_CLIENT_ID || null;
+	const clientSecret = process.env.OIDC_CLIENT_SECRET || "";
+	const enabled = !!(issuerUrl && clientId);
+	return {
+		enabled,
+		issuerUrl,
+		clientId,
+		clientSecret,
+		scope: process.env.OIDC_SCOPE || "openid email profile",
+		nameClaim: process.env.OIDC_NAME_CLAIM || "name",
+		autoCreateUsers: (process.env.OIDC_AUTO_CREATE_USERS || "true") !== "false",
+	};
+};
+
+/**
  * @returns {boolean}
  */
 const useLetsencryptStaging = () => !!process.env.LE_STAGING;
@@ -259,4 +291,4 @@ const useLetsencryptServer = () => {
 	return null;
 };
 
-export { isCI, configHas, configGet, isSqlite, isMysql, isPostgres, isDebugMode, getPrivateKey, getPublicKey, useLetsencryptStaging, useLetsencryptServer };
+export { isCI, configHas, configGet, isSqlite, isMysql, isPostgres, isDebugMode, getPrivateKey, getPublicKey, useLetsencryptStaging, useLetsencryptServer, getOidcConfig };

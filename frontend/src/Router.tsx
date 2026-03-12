@@ -15,6 +15,7 @@ import { useHealth } from "src/hooks";
 
 const Setup = lazy(() => import("src/pages/Setup"));
 const Login = lazy(() => import("src/pages/Login"));
+const OidcCallback = lazy(() => import("src/pages/OidcCallback"));
 const Dashboard = lazy(() => import("src/pages/Dashboard"));
 const Settings = lazy(() => import("src/pages/Settings"));
 const Certificates = lazy(() => import("src/pages/Certificates"));
@@ -40,6 +41,22 @@ function Router() {
 
 	if (!health.data?.setup) {
 		return <Setup />;
+	}
+
+	// OIDC callback: render the callback page even when not yet authenticated.
+	// Once loginWithToken() fires, authenticated becomes true and we fall through
+	// to the main app below; the BrowserRouter will handle redirecting / to Dashboard.
+	if (window.location.pathname === "/oidc-callback") {
+		if (authenticated) {
+			// loginWithToken succeeded — navigate away from the callback URL
+			window.history.replaceState(null, "", "/");
+		} else {
+			return (
+				<Suspense fallback={<LoadingPage />}>
+					<OidcCallback />
+				</Suspense>
+			);
+		}
 	}
 
 	if (!authenticated) {

@@ -44,3 +44,7 @@ export interface TwoFactorSetupResponse {
 export interface TwoFactorEnableResponse {
 	backupCodes: string[];
 }
+
+export interface OidcConfigResponse {
+	enabled: boolean;
+}

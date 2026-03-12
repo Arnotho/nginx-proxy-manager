@@ -13,6 +13,7 @@ Model.knex(db());
 const boolFields = ["is_deleted"];
 
 function encryptPassword() {
+	// Only hash secrets for password-based auth; oidc rows store a sub claim, not a password.
 	if (this.type === "password" && this.secret) {
 		return bcrypt.hash(this.secret, 13).then((hash) => {
 			this.secret = hash;

@@ -15,6 +15,7 @@ import streamsRoutes from "./nginx/streams.js";
 import reportsRoutes from "./reports.js";
 import schemaRoutes from "./schema.js";
 import settingsRoutes from "./settings.js";
+import oidcRoutes, { callbackRouter as oidcCallbackRouter } from "./oidc.js";
 import tokensRoutes from "./tokens.js";
 import usersRoutes from "./users.js";
 import versionRoutes from "./version.js";
@@ -48,6 +49,8 @@ router.get("/", async (_, res /*, next*/) => {
 
 router.use("/schema", schemaRoutes);
 router.use("/tokens", tokensRoutes);
+router.use("/tokens/oidc", oidcRoutes);
+router.use("/oidc/callback", oidcCallbackRouter);
 router.use("/users", usersRoutes);
 router.use("/audit-log", auditLogRoutes);
 router.use("/reports", reportsRoutes);
