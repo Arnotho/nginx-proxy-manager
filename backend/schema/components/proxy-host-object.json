@@ -147,6 +147,12 @@
 			"description": "Trust the forwarded headers",
 			"example": false
 		},
+		"auth_type": {
+			"type": "string",
+			"enum": ["none", "authelia"],
+			"description": "Authentication type for this proxy host",
+			"example": "none"
+		},
 		"certificate": {
 			"oneOf": [
 				{

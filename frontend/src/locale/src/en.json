@@ -596,6 +596,15 @@
 	"proxy-host": {
 		"defaultMessage": "Proxy Host"
 	},
+	"proxy-host.auth": {
+		"defaultMessage": "Authentication"
+	},
+	"proxy-host.auth.none": {
+		"defaultMessage": "None"
+	},
+	"proxy-host.auth.authelia": {
+		"defaultMessage": "Authelia"
+	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Forward Hostname / IP"
 	},
