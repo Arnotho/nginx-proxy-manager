@@ -241,6 +241,9 @@ const internalNginx = {
 			// Set the IPv6 setting for the host
 			host.ipv6 = internalNginx.ipv6Enabled();
 
+			// Set the Authelia upstream URL from environment variable
+			host.authelia_upstream_url = process.env.AUTHELIA_UPSTREAM_URL || "";
+
 			locationsPromise.then(() => {
 				renderEngine
 					.parseAndRender(template, host)

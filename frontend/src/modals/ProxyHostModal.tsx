@@ -5,6 +5,7 @@ import { Field, Form, Formik } from "formik";
 import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
+import Select from "react-select";
 import {
 	AccessField,
 	Button,
@@ -17,7 +18,7 @@ import {
 	SSLOptionsFields,
 } from "src/components";
 import { useProxyHost, useSetProxyHost, useUser } from "src/hooks";
-import { T } from "src/locale";
+import { T, intl } from "src/locale";
 import { MANAGE, PROXY_HOSTS } from "src/modules/Permissions";
 import { validateNumber, validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
@@ -35,6 +36,10 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const { mutate: setProxyHost } = useSetProxyHost();
 	const [errorMsg, setErrorMsg] = useState<ReactNode | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const authTypeOptions = [
+		{ value: "none", label: intl.formatMessage({ id: "proxy-host.auth.none" }) },
+		{ value: "authelia", label: intl.formatMessage({ id: "proxy-host.auth.authelia" }) },
+	];
 
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
 		if (isSubmitting) return;
@@ -92,6 +97,8 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							// Advanced tab
 							advancedConfig: data?.advancedConfig || "",
 							meta: data?.meta || {},
+							// Auth tab
+							authType: data?.authType || "none",
 						} as any
 					}
 					onSubmit={onSubmit}
@@ -329,6 +336,31 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 															</label>
 														</div>
 													</div>
+												</div>
+												<div className="my-3">
+													<Field name="authType">
+														{({ field, form }: any) => (
+															<div className="mb-3">
+																<label className="form-label" htmlFor="authType">
+																	<T id="proxy-host.auth" />
+																</label>
+																<Select
+																	className="react-select-container"
+																	classNamePrefix="react-select"
+																	inputId="authType"
+																	isSearchable={false}
+																	options={authTypeOptions}
+																	value={
+																		authTypeOptions.find((option) => option.value === field.value) ||
+																		authTypeOptions[0]
+																	}
+																	onChange={(option: any) =>
+																		form.setFieldValue(field.name, option?.value || "none")
+																	}
+																/>
+															</div>
+														)}
+													</Field>
 												</div>
 											</div>
 											<div className="tab-pane" id="tab-locations" role="tabpanel">
