@@ -18,10 +18,13 @@ export default function OidcCallback() {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		const errorParam = params.get("error");
-		const token = params.get("token");
-		const expires = params.get("expires");
+		// Token arrives in the URL fragment (#token=...) so it never touches
+		// server logs / browser history; errors arrive in the query string.
+		const query = new URLSearchParams(window.location.search);
+		const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+		const errorParam = query.get("error") || fragment.get("error");
+		const token = fragment.get("token");
+		const expires = fragment.get("expires");
 
 		if (errorParam) {
 			setError(decodeURIComponent(errorParam));

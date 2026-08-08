@@ -106,12 +106,14 @@ callbackRouter
 
 			const tokenData = await handleCallback(currentUrl, state);
 
-			// Redirect to frontend callback page with the NPM JWT in the query string
+			// Redirect to frontend callback page with the NPM JWT in the URL fragment.
+			// Using `#` (not `?`) keeps the token out of server logs, browser history
+			// and Referer headers.
 			const params = new URLSearchParams({
 				token: tokenData.token,
 				expires: tokenData.expires,
 			});
-			return res.redirect(302, `/oidc-callback?${params.toString()}`);
+			return res.redirect(302, `/oidc-callback#${params.toString()}`);
 		} catch (err) {
 			logger.error(`[oidc] GET /oidc/callback error: ${err.message}`);
 			debug(logger, `[oidc] GET /oidc/callback: ${err}`);
