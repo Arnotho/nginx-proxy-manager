@@ -614,6 +614,9 @@
 	"proxy-host.auth.authelia": {
 		"defaultMessage": "Authelia"
 	},
+	"proxy-host.auth.oauth2proxy": {
+		"defaultMessage": "OAuth2Proxy"
+	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Forward Hostname / IP"
 	},

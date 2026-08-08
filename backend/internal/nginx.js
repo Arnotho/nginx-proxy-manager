@@ -244,6 +244,9 @@ const internalNginx = {
 			// Set the Authelia upstream URL from environment variable
 			host.authelia_upstream_url = process.env.AUTHELIA_UPSTREAM_URL || "";
 
+			// Set the OAuth2Proxy upstream URL from environment variable
+			host.oauth2proxy_upstream_url = process.env.OAUTH2PROXY_UPSTREAM_URL || "http://127.0.0.1:4180";
+
 			locationsPromise.then(() => {
 				renderEngine
 					.parseAndRender(template, host)

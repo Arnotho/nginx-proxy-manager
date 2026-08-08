@@ -39,6 +39,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const authTypeOptions = [
 		{ value: "none", label: intl.formatMessage({ id: "proxy-host.auth.none" }) },
 		{ value: "authelia", label: intl.formatMessage({ id: "proxy-host.auth.authelia" }) },
+		{ value: "oauth2proxy", label: intl.formatMessage({ id: "proxy-host.auth.oauth2proxy" }) },
 	];
 
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
