@@ -149,7 +149,7 @@
 		},
 		"auth_type": {
 			"type": "string",
-			"enum": ["none", "authelia"],
+			"enum": ["none", "authelia", "oauth2proxy"],
 			"description": "Authentication type for this proxy host",
 			"example": "none"
 		},
