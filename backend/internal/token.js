@@ -11,7 +11,7 @@ const ERROR_MESSAGE_INVALID_AUTH_I18N = "error.invalid-auth";
 const ERROR_MESSAGE_INVALID_2FA = "Invalid verification code";
 const ERROR_MESSAGE_INVALID_2FA_I18N = "error.invalid-2fa";
 
-export default {
+const internalToken = {
 	/**
 	 * @param   {Object} data
 	 * @param   {String} data.identity
@@ -202,6 +202,27 @@ export default {
 		};
 	},
 
+	// OIDC must honor the same local 2FA requirement as password authentication.
+	getTokenForOidcUser: async (user) => {
+		const passwordAuth = await authModel
+			.query()
+			.where("user_id", user.id)
+			.where("type", "password")
+			.where("is_deleted", 0)
+			.first();
+		if (passwordAuth?.meta?.totp_enabled === true) {
+			const signed = await TokenModel().create({
+				iss: "api",
+				attrs: { id: user.id },
+				scope: ["2fa-challenge"],
+				expiresIn: "5m",
+			});
+			return { requires_2fa: true, challenge_token: signed.token };
+		}
+		const { token, expires } = await internalToken.getTokenFromUser(user);
+		return { token, expires };
+	},
+
 	/**
 	 * @param   {Object} user
 	 * @returns {Promise}
@@ -227,3 +248,5 @@ export default {
 		};
 	},
 };
+
+export default internalToken;

@@ -500,6 +500,15 @@
 	"login.2fa-verify": {
 		"defaultMessage": "Kinnita"
 	},
+	"login.oidc-button": {
+		"defaultMessage": "Logi sisse SSO kaudu"
+	},
+	"login.oidc-divider": {
+		"defaultMessage": "või"
+	},
+	"login.oidc-error": {
+		"defaultMessage": "SSO sisselogimine nurjus: {message}"
+	},
 	"login.title": {
 		"defaultMessage": "Logi kontole sisse"
 	},
@@ -674,8 +683,26 @@
 	"proxy-host": {
 		"defaultMessage": "Puhverserver"
 	},
+	"proxy-host.auth": {
+		"defaultMessage": "Autentimine"
+	},
+	"proxy-host.auth.authelia": {
+		"defaultMessage": "Authelia kaudu"
+	},
+	"proxy-host.auth.none": {
+		"defaultMessage": "Puudub"
+	},
+	"proxy-host.auth.oauth2proxy": {
+		"defaultMessage": "OAuth2 Proxy"
+	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Edastuse hostinimi / IP"
+	},
+	"proxy-host.proxy-config": {
+		"defaultMessage": "Kohandatud puhverserveri asukoha seadistus"
+	},
+	"proxy-host.proxy-config-hint": {
+		"defaultMessage": "Rakendatakse kõigile loodud puhverserveri asukohtadele. Näiteks: proxy_set_header X-Example \"value\"; proxy_read_timeout 60s;. Nõuab administraatori õigusi. Ära korda sisseehitatud päiseid."
 	},
 	"proxy-hosts": {
 		"defaultMessage": "Puhverserverid"

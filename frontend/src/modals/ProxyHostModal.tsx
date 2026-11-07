@@ -19,7 +19,7 @@ import {
 } from "src/components";
 import { FormModal } from "src/components/Form";
 import { useProxyHost, useSetProxyHost, useUser } from "src/hooks";
-import { T, intl } from "src/locale";
+import { intl, T } from "src/locale";
 import { MANAGE, PROXY_HOSTS } from "src/modules/Permissions";
 import { validateNumber, validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
@@ -59,6 +59,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		if (!isAdmin) {
 			delete payload.advanced_config;
 			delete payload.advancedConfig;
+			delete payload.proxyConfig;
 			const existingLocations = data?.locations || [];
 			payload.locations = payload.locations.map((loc: any) => {
 				const existingLoc = existingLocations.find((l: any) => l.path === loc.path);
@@ -121,6 +122,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							trustForwardedProto: data?.trustForwardedProto || false,
 							// Advanced tab
 							advancedConfig: data?.advancedConfig || "",
+							proxyConfig: data?.proxyConfig || "",
 							meta: data?.meta || {},
 							// Auth tab
 							authType: data?.authType || "none",
@@ -384,11 +386,15 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 																	isSearchable={false}
 																	options={authTypeOptions}
 																	value={
-																		authTypeOptions.find((option) => option.value === field.value) ||
-																		authTypeOptions[0]
+																		authTypeOptions.find(
+																			(option) => option.value === field.value,
+																		) || authTypeOptions[0]
 																	}
 																	onChange={(option: any) =>
-																		form.setFieldValue(field.name, option?.value || "none")
+																		form.setFieldValue(
+																			field.name,
+																			option?.value || "none",
+																		)
 																	}
 																/>
 															</div>
@@ -413,6 +419,14 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 											{isAdmin && (
 												<div className="tab-pane" id="tab-advanced" role="tabpanel">
 													<NginxConfigField />
+													<NginxConfigField
+														name="proxyConfig"
+														id="proxyConfig"
+														label="proxy-host.proxy-config"
+													/>
+													<p className="text-secondary mt-2">
+														<T id="proxy-host.proxy-config-hint" />
+													</p>
 												</div>
 											)}
 										</div>

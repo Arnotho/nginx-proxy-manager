@@ -512,6 +512,12 @@
 	"proxy-host.forward-host": {
 		"defaultMessage": "转发主机名 / IP"
 	},
+	"proxy-host.proxy-config": {
+		"defaultMessage": "自定义代理指令（location）"
+	},
+	"proxy-host.proxy-config-hint": {
+		"defaultMessage": "应用于默认代理路径及所有自定义路径。例如：proxy_set_header X-Example \"value\"; proxy_read_timeout 60s;。仅管理员可编辑，请勿重复内置代理请求头。"
+	},
 	"proxy-hosts": {
 		"defaultMessage": "代理服务列表"
 	},

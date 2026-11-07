@@ -263,10 +263,11 @@ const getPrivateKey = () => {
  *
  * Optional:
  *   OIDC_SCOPE             - default: "openid email profile"
+ *   OIDC_ALLOW_EMAIL_LINKING - "true" to link an existing account by verified email (migration only)
  *   OIDC_NAME_CLAIM        - which ID token claim to use as display name, default: "name"
- *   OIDC_AUTO_CREATE_USERS - "true" to create a local user on first OIDC login, default: true
+ *   OIDC_AUTO_CREATE_USERS - "true" to create a local user on first OIDC login, default: false
  *
- * @returns {{ enabled: boolean, issuerUrl: string, clientId: string, clientSecret: string, scope: string, nameClaim: string, autoCreateUsers: boolean }}
+ * @returns {{ enabled: boolean, issuerUrl: string, clientId: string, clientSecret: string, scope: string, nameClaim: string, autoCreateUsers: boolean, allowEmailLinking: boolean }}
  */
 const getOidcConfig = () => {
 	const issuerUrl = process.env.OIDC_ISSUER_URL || null;
@@ -280,7 +281,8 @@ const getOidcConfig = () => {
 		clientSecret,
 		scope: process.env.OIDC_SCOPE || "openid email profile",
 		nameClaim: process.env.OIDC_NAME_CLAIM || "name",
-		autoCreateUsers: (process.env.OIDC_AUTO_CREATE_USERS || "true") !== "false",
+		autoCreateUsers: process.env.OIDC_AUTO_CREATE_USERS === "true",
+		allowEmailLinking: process.env.OIDC_ALLOW_EMAIL_LINKING === "true",
 	};
 };
 
@@ -300,16 +302,16 @@ const useLetsencryptServer = () => {
 };
 
 export {
-	isCI,
-	configHas,
 	configGet,
-	isSqlite,
-	isMysql,
-	isPostgres,
-	isDebugMode,
+	configHas,
+	getOidcConfig,
 	getPrivateKey,
 	getPublicKey,
-	useLetsencryptStaging,
+	isCI,
+	isDebugMode,
+	isMysql,
+	isPostgres,
+	isSqlite,
 	useLetsencryptServer,
-	getOidcConfig,
+	useLetsencryptStaging,
 };

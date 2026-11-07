@@ -44,20 +44,12 @@ function Router() {
 		return <Setup />;
 	}
 
-	// OIDC callback: render the callback page even when not yet authenticated.
-	// Once loginWithToken() fires, authenticated becomes true and we fall through
-	// to the main app below; the BrowserRouter will handle redirecting / to Dashboard.
 	if (window.location.pathname === "/oidc-callback") {
-		if (authenticated) {
-			// loginWithToken succeeded — navigate away from the callback URL
-			window.history.replaceState(null, "", "/");
-		} else {
-			return (
-				<Suspense fallback={<LoadingPage />}>
-					<OidcCallback />
-				</Suspense>
-			);
-		}
+		return (
+			<Suspense fallback={<LoadingPage />}>
+				<OidcCallback />
+			</Suspense>
+		);
 	}
 
 	if (!authenticated) {

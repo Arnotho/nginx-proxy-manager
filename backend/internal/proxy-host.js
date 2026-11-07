@@ -2,6 +2,7 @@ import _ from "lodash";
 import errs from "../lib/error.js";
 import { castJsonIfNeed } from "../lib/helpers.js";
 import utils from "../lib/utils.js";
+import { checkProxyConfigPermission, getForwardAuthConfig } from "../lib/proxy-config.js";
 import proxyHostModel from "../models/proxy_host.js";
 import userPermissionModel from "../models/user_permission.js";
 import internalAuditLog from "./audit-log.js";
@@ -58,6 +59,8 @@ const internalProxyHost = {
 					thisData.advanced_config = "";
 				}
 
+				checkProxyConfigPermission(access, thisData);
+				getForwardAuthConfig(thisData.auth_type);
 				const isAdmin = access.hasRole?.("admin") || access.token.hasScope("admin");
 				if (!isAdmin && thisData.advanced_config && thisData.advanced_config.trim() !== "") {
 					throw new errs.PermissionError("You do not have permission to modify advanced configuration");
@@ -196,6 +199,8 @@ const internalProxyHost = {
 
 				thisData = internalHost.cleanSslHstsData(thisData, row);
 
+				checkProxyConfigPermission(access, thisData, row);
+				getForwardAuthConfig(thisData.auth_type ?? row.auth_type);
 				const isAdmin = access.hasRole?.("admin") || access.token.hasScope("admin");
 				if (
 					!isAdmin &&

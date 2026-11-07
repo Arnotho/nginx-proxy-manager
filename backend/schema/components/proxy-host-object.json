@@ -89,7 +89,10 @@
 		},
 		"forward_scheme": {
 			"type": "string",
-			"enum": ["http", "https"],
+			"enum": [
+				"http",
+				"https"
+			],
 			"example": "http"
 		},
 		"enabled": {
@@ -100,11 +103,19 @@
 			"minItems": 0,
 			"items": {
 				"type": "object",
-				"required": ["forward_scheme", "forward_host", "forward_port", "path"],
+				"required": [
+					"forward_scheme",
+					"forward_host",
+					"forward_port",
+					"path"
+				],
 				"additionalProperties": false,
 				"properties": {
 					"id": {
-						"type": ["integer", "null"]
+						"type": [
+							"integer",
+							"null"
+						]
 					},
 					"path": {
 						"type": "string",
@@ -146,14 +157,18 @@
 		"hsts_subdomains": {
 			"$ref": "../common.json#/properties/hsts_subdomains"
 		},
-		"trust_forwarded_proto":{
+		"trust_forwarded_proto": {
 			"type": "boolean",
 			"description": "Trust the forwarded headers",
 			"example": false
 		},
 		"auth_type": {
 			"type": "string",
-			"enum": ["none", "authelia", "oauth2proxy"],
+			"enum": [
+				"none",
+				"authelia",
+				"oauth2proxy"
+			],
 			"description": "Authentication type for this proxy host",
 			"example": "none"
 		},
@@ -183,6 +198,12 @@
 				}
 			],
 			"example": null
+		},
+		"proxy_config": {
+			"type": "string",
+			"maxLength": 32768,
+			"description": "Administrator-only Nginx directives inserted into every generated proxy location",
+			"example": "proxy_set_header X-Example \"value\";\nproxy_read_timeout 60s;"
 		}
 	}
 }

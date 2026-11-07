@@ -500,6 +500,15 @@
 	"login.2fa-verify": {
 		"defaultMessage": "Xác minh"
 	},
+	"login.oidc-button": {
+		"defaultMessage": "Đăng nhập bằng SSO"
+	},
+	"login.oidc-divider": {
+		"defaultMessage": "hoặc"
+	},
+	"login.oidc-error": {
+		"defaultMessage": "Đăng nhập SSO thất bại: {message}"
+	},
 	"login.title": {
 		"defaultMessage": "Đăng nhập vào tài khoản của bạn"
 	},
@@ -674,8 +683,26 @@
 	"proxy-host": {
 		"defaultMessage": "Máy chủ proxy"
 	},
+	"proxy-host.auth": {
+		"defaultMessage": "Xác thực"
+	},
+	"proxy-host.auth.authelia": {
+		"defaultMessage": "Xác thực Authelia"
+	},
+	"proxy-host.auth.none": {
+		"defaultMessage": "Không"
+	},
+	"proxy-host.auth.oauth2proxy": {
+		"defaultMessage": "OAuth2 Proxy"
+	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Hostname / IP đích"
+	},
+	"proxy-host.proxy-config": {
+		"defaultMessage": "Cấu hình tùy chỉnh cho vị trí proxy"
+	},
+	"proxy-host.proxy-config-hint": {
+		"defaultMessage": "Áp dụng cho mọi vị trí proxy được tạo, kể cả đường dẫn tùy chỉnh. Ví dụ: proxy_set_header X-Example \"value\"; proxy_read_timeout 60s;. Chỉ quản trị viên có thể sửa. Không lặp lại các tiêu đề proxy có sẵn."
 	},
 	"proxy-hosts": {
 		"defaultMessage": "Máy chủ proxy"

@@ -160,6 +160,7 @@ export interface ProxyHost {
 	hstsSubdomains: boolean;
 	trustForwardedProto: boolean;
 	authType: "none" | "authelia" | "oauth2proxy";
+	proxyConfig: string;
 	// Expansions:
 	owner?: User;
 	accessList?: AccessList;

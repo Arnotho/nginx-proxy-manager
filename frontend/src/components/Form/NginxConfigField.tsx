@@ -20,6 +20,7 @@ export function NginxConfigField({
 						<T id={label} />
 					</label>
 					<CodeEditor
+						id={id}
 						language="nginx"
 						placeholder={intl.formatMessage({ id: "nginx-config.placeholder" })}
 						padding={15}

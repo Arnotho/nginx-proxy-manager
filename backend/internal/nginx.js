@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import _ from "lodash";
 import errs from "../lib/error.js";
 import utils from "../lib/utils.js";
+import { getForwardAuthConfig } from "../lib/proxy-config.js";
 import { debug, nginx as logger } from "../logger.js";
 import accessListModel from "../models/access_list.js";
 import certificateModel from "../models/certificate.js";
@@ -168,6 +169,8 @@ const internalNginx = {
 						{ access_list: host.access_list },
 						{ certificate: host.certificate },
 						host.locations[i],
+						{ auth_type: host.auth_type, proxy_config: host.proxy_config },
+						getForwardAuthConfig(host.auth_type),
 					);
 
 					// A location with its own access list overrides the host's,
@@ -215,6 +218,7 @@ const internalNginx = {
 		const host = JSON.parse(JSON.stringify(host_row));
 		const nice_host_type = internalNginx.getFileFriendlyHostType(host_type);
 
+		if (nice_host_type === "proxy_host") Object.assign(host, getForwardAuthConfig(host.auth_type));
 		await internalNginx.loadRenderRelations(nice_host_type, host);
 
 		debug(logger, `Generating ${nice_host_type} Config:`, JSON.stringify(host, null, 2));
@@ -279,11 +283,7 @@ const internalNginx = {
 			// Set the IPv6 setting for the host
 			host.ipv6 = internalNginx.ipv6Enabled();
 
-			// Set the Authelia upstream URL from environment variable
-			host.authelia_upstream_url = process.env.AUTHELIA_UPSTREAM_URL || "";
 
-			// Set the OAuth2Proxy upstream URL from environment variable
-			host.oauth2proxy_upstream_url = process.env.OAUTH2PROXY_UPSTREAM_URL || "http://127.0.0.1:4180";
 
 			locationsPromise.then(() => {
 				renderEngine

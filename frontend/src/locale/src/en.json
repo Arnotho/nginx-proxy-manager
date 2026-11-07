@@ -500,6 +500,15 @@
 	"login.2fa-verify": {
 		"defaultMessage": "Verify"
 	},
+	"login.oidc-button": {
+		"defaultMessage": "Sign in with SSO"
+	},
+	"login.oidc-divider": {
+		"defaultMessage": "or"
+	},
+	"login.oidc-error": {
+		"defaultMessage": "SSO login failed: {message}"
+	},
 	"login.title": {
 		"defaultMessage": "Login to your account"
 	},
@@ -674,8 +683,26 @@
 	"proxy-host": {
 		"defaultMessage": "Proxy Host"
 	},
+	"proxy-host.auth": {
+		"defaultMessage": "Authentication"
+	},
+	"proxy-host.auth.authelia": {
+		"defaultMessage": "Authelia"
+	},
+	"proxy-host.auth.none": {
+		"defaultMessage": "None"
+	},
+	"proxy-host.auth.oauth2proxy": {
+		"defaultMessage": "OAuth2Proxy"
+	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Forward Hostname / IP"
+	},
+	"proxy-host.proxy-config": {
+		"defaultMessage": "Custom proxy location configuration"
+	},
+	"proxy-host.proxy-config-hint": {
+		"defaultMessage": "Applied to every generated proxy location, including custom paths. For example: proxy_set_header X-Example \"value\"; proxy_read_timeout 60s;. Administrator access required. Do not repeat built-in proxy headers."
 	},
 	"proxy-hosts": {
 		"defaultMessage": "Proxy Hosts"
@@ -850,26 +877,5 @@
 	},
 	"users": {
 		"defaultMessage": "Users"
-	},
-	"login.oidc-button": {
-		"defaultMessage": "Sign in with SSO"
-	},
-	"login.oidc-divider": {
-		"defaultMessage": "or"
-	},
-	"login.oidc-error": {
-		"defaultMessage": "SSO login failed: {message}"
-	},
-	"proxy-host.auth": {
-		"defaultMessage": "Authentication"
-	},
-	"proxy-host.auth.none": {
-		"defaultMessage": "None"
-	},
-	"proxy-host.auth.authelia": {
-		"defaultMessage": "Authelia"
-	},
-	"proxy-host.auth.oauth2proxy": {
-		"defaultMessage": "OAuth2Proxy"
 	}
 }
