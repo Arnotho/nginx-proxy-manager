@@ -1,7 +1,9 @@
 {
 	"operationId": "createProxyHost",
 	"summary": "Create a Proxy Host",
-	"tags": ["proxy-hosts"],
+	"tags": [
+		"proxy-hosts"
+	],
 	"security": [
 		{
 			"bearerAuth": [
@@ -49,7 +51,7 @@
 							"$ref": "../../../components/proxy-host-object.json#/properties/hsts_subdomains"
 						},
 						"trust_forwarded_proto": {
-    						"$ref": "../../../components/proxy-host-object.json#/properties/trust_forwarded_proto"
+							"$ref": "../../../components/proxy-host-object.json#/properties/trust_forwarded_proto"
 						},
 						"http2_support": {
 							"$ref": "../../../components/proxy-host-object.json#/properties/http2_support"
@@ -80,6 +82,9 @@
 						},
 						"auth_type": {
 							"$ref": "../../../components/proxy-host-object.json#/properties/auth_type"
+						},
+						"proxy_config": {
+							"$ref": "../../../components/proxy-host-object.json#/properties/proxy_config"
 						}
 					}
 				},

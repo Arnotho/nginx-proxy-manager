@@ -1,6 +1,7 @@
 // Objection Docs:
 // http://vincit.github.io/objection.js/
 
+import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import { Model } from "objection";
 import db from "../db.js";
@@ -11,11 +12,16 @@ import User from "./user.js";
 Model.knex(db());
 
 const boolFields = ["is_deleted"];
+const saltRounds = 13;
+
+// A hash of a random value, for a login that names an account with no password to check it against. Hashed
+// with the same cost as real passwords, and made at startup so the first such login takes no longer either.
+const dummyHash = bcrypt.hash(crypto.randomBytes(32).toString("hex"), saltRounds);
 
 function encryptPassword() {
 	// Only hash secrets for password-based auth; oidc rows store a sub claim, not a password.
 	if (this.type === "password" && this.secret) {
-		return bcrypt.hash(this.secret, 13).then((hash) => {
+		return bcrypt.hash(this.secret, saltRounds).then((hash) => {
 			this.secret = hash;
 		});
 	}
@@ -59,6 +65,18 @@ class Auth extends Model {
 	 */
 	verifyPassword(password) {
 		return bcrypt.compare(password, this.secret);
+	}
+
+	/**
+	 * Take as long as verifyPassword does, then fail. bcrypt is nearly all of the time a login takes, so a login
+	 * that skipped it for an unknown account would answer far sooner, and say which accounts exist.
+	 *
+	 * @param {String} password
+	 * @returns {Promise<false>}
+	 */
+	static async verifyDummyPassword(password) {
+		await bcrypt.compare(password, await dummyHash);
+		return false;
 	}
 
 	static get name() {

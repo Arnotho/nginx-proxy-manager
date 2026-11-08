@@ -1,125 +1,95 @@
-/**
- * OIDC Routes
- *
- * GET  /tokens/oidc/config          → Returns whether OIDC is enabled (safe, no secrets)
- * GET  /tokens/oidc                 → Initiates OIDC authorization (redirects to IdP)
- * GET  /oidc/callback  (top-level)  → Handles IdP callback, issues NPM JWT and redirects to frontend
- *
- * NOTE: The callback is registered at /oidc/callback (not under /tokens/oidc/) so that
- * nginx can proxy it with the path intact (no prefix stripping). The IdP redirect_uri
- * must be set to:  https://<host>/api/oidc/callback
- */
-
+import { randomBytes } from "node:crypto";
 import express from "express";
-import { getAuthorizationUrl, handleCallback, isOidcEnabled } from "../internal/oidc.js";
-import { debug, express as logger } from "../logger.js";
+import { exchangeLoginResult, getAuthorizationUrl, handleCallback, isOidcEnabled } from "../internal/oidc.js";
+import errs from "../lib/error.js";
+import createRateLimiter from "../lib/express/rate-limit.js";
+import { express as logger } from "../logger.js";
 
-const router = express.Router({
-	caseSensitive: true,
-	strict: true,
-	mergeParams: true,
+const router = express.Router({ caseSensitive: true, strict: true, mergeParams: true });
+const callbackRouter = express.Router({ caseSensitive: true, strict: true, mergeParams: true });
+const loginLimiter = createRateLimiter({ windowMs: 60000, max: 10, skipSuccessfulRequests: false });
+const STATE_COOKIE = "__Host-npm_oidc_state";
+const RESULT_COOKIE = "__Host-npm_oidc_result";
+const cookieOptions = { httpOnly: true, sameSite: "lax", secure: true, path: "/" };
+
+// Require a configured canonical origin: Host and X-Forwarded-* are untrusted input.
+export function getOidcBaseUrl() {
+	let url;
+	try {
+		url = new URL(process.env.OIDC_BASE_URL);
+	} catch {
+		throw new errs.ConfigurationError("Set OIDC_BASE_URL to the HTTPS origin of the admin UI");
+	}
+	if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+		throw new errs.ConfigurationError("OIDC_BASE_URL must be an HTTPS origin without a path");
+	}
+	return url.origin;
+}
+
+function readCookie(req, name) {
+	const values = (req.headers.cookie || "")
+		.split(";")
+		.map((part) => part.trim())
+		.filter((part) => part.startsWith(`${name}=`));
+	// Reject duplicates to avoid ambiguity if another path or subdomain sets a cookie.
+	if (values.length !== 1) return null;
+	const value = values[0].slice(name.length + 1);
+	return /^[A-Za-z0-9_-]{43}$/.test(value) ? value : null;
+}
+
+function noStore(_req, res, next) {
+	res.set({ "Cache-Control": "no-store", Pragma: "no-cache", "Referrer-Policy": "no-referrer" });
+	next();
+}
+router.use(noStore);
+callbackRouter.use(noStore);
+
+router.get("/config", (_req, res) => res.json({ enabled: isOidcEnabled() }));
+router.get("/", loginLimiter, async (_req, res, next) => {
+	try {
+		const redirectUri = `${getOidcBaseUrl()}/api/oidc/callback`;
+		const binding = randomBytes(32).toString("base64url");
+		const { url } = await getAuthorizationUrl(redirectUri, binding);
+		res.clearCookie(RESULT_COOKIE, cookieOptions);
+		res.cookie(STATE_COOKIE, binding, { ...cookieOptions, maxAge: 10 * 60 * 1000 });
+		res.redirect(302, url);
+	} catch (err) {
+		next(err);
+	}
 });
 
-/**
- * GET /tokens/oidc/config
- *
- * Returns { enabled: boolean } so the frontend can decide whether to show the OIDC button.
- * Intentionally exposes no secrets.
- */
-router
-	.route("/config")
-	.options((_, res) => res.sendStatus(204))
-	.get((_, res) => {
-		res.status(200).json({ enabled: isOidcEnabled() });
-	});
-
-/**
- * GET /tokens/oidc
- *
- * Builds the OIDC authorization URL (with PKCE) and redirects the browser to the IdP.
- */
-router
-	.route("/")
-	.options((_, res) => res.sendStatus(204))
-	.get(async (req, res, next) => {
-		try {
-			// Build the redirect_uri.
-			// Priority:
-			//   1. OIDC_BASE_URL env var  (e.g. "https://npm.example.com") — most reliable
-			//      in production where NPM sits behind multiple reverse proxies.
-			//   2. X-Forwarded-Proto / X-Forwarded-Host headers set by the outer proxy.
-			//   3. Fallback to Express req.protocol / req.hostname.
-			const baseUrl =
-				process.env.OIDC_BASE_URL ||
-				`${req.headers["x-forwarded-proto"] || req.protocol}://${req.headers["x-forwarded-host"] || req.get("host")}`;
-			const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/oidc/callback`;
-
-			const { url } = await getAuthorizationUrl(redirectUri);
-			res.redirect(302, url);
-		} catch (err) {
-			debug(logger, `[oidc] GET /tokens/oidc: ${err}`);
-			next(err);
+callbackRouter.get("/", loginLimiter, async (req, res) => {
+	try {
+		if (typeof req.query.state !== "string") throw new errs.AuthError("Missing OIDC state");
+		const base = getOidcBaseUrl();
+		const url = new URL(`${base}/api/oidc/callback`);
+		for (const [key, value] of Object.entries(req.query)) {
+			if (typeof value !== "string") throw new errs.AuthError("Invalid OIDC callback parameters");
+			url.searchParams.set(key, value);
 		}
-	});
-
-export default router;
-
-// ---------------------------------------------------------------------------
-// Callback router — mounted at /oidc/callback in main.js so Express receives
-// the path WITHOUT any prefix stripping. The IdP redirect_uri must be:
-//   https://<host>/api/oidc/callback
-// ---------------------------------------------------------------------------
-const callbackRouter = express.Router({
-	caseSensitive: true,
-	strict: true,
-	mergeParams: true,
+		const ticket = await handleCallback(url.href, req.query.state, readCookie(req, STATE_COOKIE));
+		res.cookie(RESULT_COOKIE, ticket, { ...cookieOptions, maxAge: 60000 });
+		return res.redirect(302, "/oidc-callback");
+	} catch (err) {
+		logger.warn(`[oidc] Callback failed: ${err.message}`);
+		res.clearCookie(STATE_COOKIE, cookieOptions);
+		res.clearCookie(RESULT_COOKIE, cookieOptions);
+		return res.redirect(302, "/oidc-callback?error=SSO+authentication+failed.+Please+start+again.");
+	}
 });
 
-/**
- * GET /oidc/callback
- *
- * Receives the authorization code from the IdP, exchanges it for an ID token,
- * then issues an NPM JWT and redirects the frontend to /oidc-callback?token=...&expires=...
- */
-callbackRouter
-	.route("/")
-	.options((_, res) => res.sendStatus(204))
-	.get(async (req, res, next) => {
-		try {
-			const { error, error_description, state } = req.query;
-
-			// IdP returned an error
-			if (error) {
-				const msg = encodeURIComponent(error_description || error);
-				return res.redirect(302, `/oidc-callback?error=${msg}`);
-			}
-
-			if (!state) {
-				return res.redirect(302, "/oidc-callback?error=Missing+state+parameter");
-			}
-
-			const baseUrl =
-				process.env.OIDC_BASE_URL ||
-				`${req.headers["x-forwarded-proto"] || req.protocol}://${req.headers["x-forwarded-host"] || req.get("host")}`;
-			const callbackQuery = new URLSearchParams(req.query).toString();
-			const currentUrl = `${baseUrl.replace(/\/$/, "")}/api/oidc/callback${callbackQuery ? `?${callbackQuery}` : ""}`;
-
-			const tokenData = await handleCallback(currentUrl, state);
-
-			// Redirect to frontend callback page with the NPM JWT in the URL fragment.
-			// Using `#` (not `?`) keeps the token out of server logs, browser history
-			// and Referer headers.
-			const params = new URLSearchParams({
-				token: tokenData.token,
-				expires: tokenData.expires,
-			});
-			return res.redirect(302, `/oidc-callback#${params.toString()}`);
-		} catch (err) {
-			logger.error(`[oidc] GET /oidc/callback error: ${err.message}`);
-			debug(logger, `[oidc] GET /oidc/callback: ${err}`);
-			const msg = encodeURIComponent(err.public ? err.message : "OIDC authentication failed");
-			return res.redirect(302, `/oidc-callback?error=${msg}`);
-		}
-	});
+router.post("/exchange", loginLimiter, async (req, res, next) => {
+	try {
+		// A cross-origin form/fetch must not be able to consume a login result.
+		if (req.get("origin") !== getOidcBaseUrl()) throw new errs.AuthError("Invalid OIDC exchange origin");
+		const result = await exchangeLoginResult(readCookie(req, RESULT_COOKIE), readCookie(req, STATE_COOKIE));
+		res.clearCookie(STATE_COOKIE, cookieOptions);
+		res.clearCookie(RESULT_COOKIE, cookieOptions);
+		res.json(result);
+	} catch (err) {
+		next(err);
+	}
+});
 
 export { callbackRouter };
+export default router;

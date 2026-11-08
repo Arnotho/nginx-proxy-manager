@@ -1,13 +1,14 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import {
+	exchangeOidcLogin,
 	getToken,
 	isTwoFactorChallenge,
 	loginAsUser,
 	refreshToken,
-	verify2FA,
 	type TokenResponse,
+	verify2FA,
 } from "src/api/backend";
 import AuthStore from "src/modules/AuthStore";
 
@@ -25,7 +26,7 @@ export interface AuthContextType {
 	cancelTwoFactor: () => void;
 	loginAs: (id: number) => Promise<void>;
 	logout: () => void;
-	loginWithToken: (response: TokenResponse) => void;
+	completeOidcLogin: () => Promise<void>;
 	token?: string;
 }
 
@@ -69,10 +70,21 @@ function AuthProvider({ children, tokenRefreshInterval = 5 * 60 * 1000 }: Props)
 		setTwoFactorChallenge(null);
 	};
 
-	// Used by OidcCallback to apply a token received via redirect without a page reload.
-	const loginWithToken = (response: TokenResponse) => {
-		handleTokenUpdate(response);
-	};
+	const completeOidcLogin = useCallback(async () => {
+		const response = await exchangeOidcLogin();
+		queryClient.clear();
+		// Move off the callback before updating auth state (including a 2FA challenge).
+		window.history.replaceState(null, "", "/");
+		if (isTwoFactorChallenge(response)) {
+			setAuthenticated(false);
+			AuthStore.clear();
+			setTwoFactorChallenge({ challengeToken: response.challengeToken });
+		} else {
+			AuthStore.set(response);
+			// Also refresh an already-authenticated session switching identities.
+			window.location.replace("/");
+		}
+	}, [queryClient]);
 
 	const loginAs = async (id: number) => {
 		const response = await loginAsUser(id);
@@ -116,7 +128,7 @@ function AuthProvider({ children, tokenRefreshInterval = 5 * 60 * 1000 }: Props)
 		cancelTwoFactor,
 		loginAs,
 		logout,
-		loginWithToken,
+		completeOidcLogin,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import {
 	ErrorNotFound,
 	LoadingPage,
@@ -21,6 +21,7 @@ const Settings = lazy(() => import("src/pages/Settings"));
 const Certificates = lazy(() => import("src/pages/Certificates"));
 const Access = lazy(() => import("src/pages/Access"));
 const AuditLog = lazy(() => import("src/pages/AuditLog"));
+const Logs = lazy(() => import("src/pages/Logs"));
 const Users = lazy(() => import("src/pages/Users"));
 const ProxyHosts = lazy(() => import("src/pages/Nginx/ProxyHosts"));
 const RedirectionHosts = lazy(() => import("src/pages/Nginx/RedirectionHosts"));
@@ -43,20 +44,12 @@ function Router() {
 		return <Setup />;
 	}
 
-	// OIDC callback: render the callback page even when not yet authenticated.
-	// Once loginWithToken() fires, authenticated becomes true and we fall through
-	// to the main app below; the BrowserRouter will handle redirecting / to Dashboard.
 	if (window.location.pathname === "/oidc-callback") {
-		if (authenticated) {
-			// loginWithToken succeeded — navigate away from the callback URL
-			window.history.replaceState(null, "", "/");
-		} else {
-			return (
-				<Suspense fallback={<LoadingPage />}>
-					<OidcCallback />
-				</Suspense>
-			);
-		}
+		return (
+			<Suspense fallback={<LoadingPage />}>
+				<OidcCallback />
+			</Suspense>
+		);
 	}
 
 	if (!authenticated) {
@@ -78,9 +71,11 @@ function Router() {
 					<Suspense fallback={<LoadingPage noLogo />}>
 						<Routes>
 							<Route path="*" element={<ErrorNotFound />} />
+							<Route path="/login" element={<Navigate to="/" replace />} />
 							<Route path="/certificates" element={<Certificates />} />
 							<Route path="/access" element={<Access />} />
 							<Route path="/audit-log" element={<AuditLog />} />
+							<Route path="/logs" element={<Logs />} />
 							<Route path="/settings" element={<Settings />} />
 							<Route path="/users" element={<Users />} />
 							<Route path="/nginx/proxy" element={<ProxyHosts />} />

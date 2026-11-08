@@ -1,4 +1,5 @@
 import * as api from "./base";
+import type { LoginResponse } from "./getToken";
 import type { OidcConfigResponse } from "./responseTypes";
 
 /**
@@ -7,4 +8,8 @@ import type { OidcConfigResponse } from "./responseTypes";
  */
 export async function getOidcConfig(): Promise<OidcConfigResponse> {
 	return await api.get({ url: "/tokens/oidc/config" });
+}
+
+export async function exchangeOidcLogin(): Promise<LoginResponse> {
+	return api.post({ url: "/tokens/oidc/exchange", noAuth: true });
 }
