@@ -60,6 +60,7 @@ mock.module("openid-client", {
 const oidc = await import("../internal/oidc.js");
 const userModel = (await import("../models/user.js")).default;
 const authModel = (await import("../models/auth.js")).default;
+const proxyHostModel = (await import("../models/proxy_host.js")).default;
 const internalToken = (await import("../internal/token.js")).default;
 const TokenModel = (await import("../models/token.js")).default;
 const nginx = (await import("../internal/nginx.js")).default;
@@ -208,6 +209,31 @@ test("proxy config requires administrator privileges on create and update", () =
 	assert.doesNotThrow(() =>
 		checkProxyConfigPermission({ ...user, hasRole: () => true }, { proxy_config: "proxy_read_timeout 60s;" }),
 	);
+});
+
+test("proxy hosts persist omitted proxy config without a database default", async () => {
+	// Knex omits TEXT defaults on MySQL. Exercise the same NOT NULL boundary
+	// with a real database rather than relying on SQLite's migration default.
+	const db = knex({ client: "better-sqlite3", connection: { filename: ":memory:" }, useNullAsDefault: true });
+	try {
+		await db.schema.createTable("proxy_host", (table) => {
+			table.increments("id");
+			table.dateTime("created_on").notNullable();
+			table.dateTime("modified_on").notNullable();
+			table.json("domain_names").notNullable();
+			table.json("meta").notNullable();
+			table.text("proxy_config").notNullable();
+		});
+		const Host = proxyHostModel.bindKnex(db);
+		const omitted = await Host.query().insertAndFetch({ domain_names: ["old-client.example"] });
+		assert.equal(omitted.proxy_config, "");
+		const directives = "proxy_read_timeout 60s;";
+		const configured = await Host.query().insertAndFetch({ domain_names: ["admin.example"], proxy_config: directives });
+		await Host.query().findById(configured.id).patch({ meta: { note: "updated" } });
+		assert.equal((await Host.query().findById(configured.id)).proxy_config, directives);
+	} finally {
+		await db.destroy();
+	}
 });
 
 test("non-admins cannot smuggle directives through typed host or path fields", () => {

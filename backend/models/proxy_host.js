@@ -39,6 +39,11 @@ class ProxyHost extends Model {
 			this.meta = {};
 		}
 
+		// MySQL does not retain Knex's default for this optional TEXT column.
+		if (typeof this.proxy_config === "undefined") {
+			this.proxy_config = "";
+		}
+
 		this.domain_names.sort();
 	}
 

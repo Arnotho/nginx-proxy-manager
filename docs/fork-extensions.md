@@ -115,13 +115,17 @@ need their normal redirect allowlists, TLS and session-cookie settings.
 Before upgrading, back up the database and persistent data. The new migration
 adds `proxy_host.proxy_config` and retains existing rules. MySQL/PostgreSQL
 migration execution and a live IdP login have not been exercised in this task.
+The model supplies an empty `proxy_config` on insert when omitted, including
+legacy API clients and non-admin forms: Knex omits TEXT defaults on MySQL.
 
 ## Validation and remaining limitations
 
-- Backend: 14 security/DDL regression tests pass: `cd backend && yarn test:security`.
+- Backend: 15 security/DDL regression tests pass: `cd backend && yarn test:security`.
   Covers browser binding, replay/expiry, email linking, issuer/subject binding,
   transaction rollback, local 2FA, admin permissions, injection checks, templates,
   actual Express HTTP routes and full SQLite fresh-install/upgrade migrations.
+  A defaultless NOT NULL database column also verifies omitted `proxy_config`
+  inserts and preservation of explicit directives on unrelated updates.
 - Frontend: locale compilation, TypeScript/Vite production build and 57 Vitest
   tests pass, including StrictMode callback behavior and rejecting URL credentials.
 - `cd backend && node test/nginx-integration.mjs`: official `nginx:stable-alpine`
