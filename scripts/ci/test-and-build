@@ -3,8 +3,8 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$DIR/../.common.sh"
 
-TESTING_IMAGE=nginxproxymanager/nginx-full:certbot-node
-docker pull "${TESTING_IMAGE}"
+TESTING_IMAGE=nginx-proxy-manager:nginx-security-base
+docker build --pull --target nginx-base -f docker/Dockerfile -t "${TESTING_IMAGE}" .
 
 # Test
 echo -e "${BLUE}❯ ${CYAN}Testing backend ...${RESET}"

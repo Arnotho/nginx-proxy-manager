@@ -58,13 +58,53 @@ const host = {
     id: 999, enabled: true, domain_names: ["host-port.example.test", "[::1]"],
     forward_scheme: "https", forward_host: "127.0.0.1", forward_port: 19443,
     certificate_id: 999, certificate: {id: 999, provider: "other"}, access_list_id: 0,
-    ssl_forced: false, hsts_enabled: false, http2_support: false,
+    ssl_forced: false, hsts_enabled: false, http2_support: true,
     block_exploits: false, caching_enabled: true, allow_websocket_upgrade: false,
-    advanced_config: "", locations: [{path: "/custom/", advanced_config: "",
+    advanced_config: 'location = /lua-check { content_by_lua_block { ngx.say("lua-ok") } }',
+    locations: [{path: "/custom/", advanced_config: "",
         forward_scheme: "https", forward_host: "127.0.0.1", forward_port: 19443}]
 };
 await nginx.generateConfig("proxy_host", host);
 process.exit(0);
+'''
+
+
+HTTP2 = r'''
+import assert from "node:assert/strict";
+import http2 from "node:http2";
+
+const client = http2.connect("https://127.0.0.1", {
+    rejectUnauthorized: false, servername: "host-port.example.test"
+});
+client.on("error", (error) => { console.error(error); process.exit(1); });
+const timeout = setTimeout(() => { console.error("HTTP/2 smoke test timed out"); process.exit(1); }, 15000);
+try {
+    await Promise.all(Array.from({length: 24}, (_, i) => new Promise((resolve, reject) => {
+        const path = (i % 2 ? "/custom/" : "/") + "http2-" + i;
+        const req = client.request({":path": path, ":authority": "host-port.example.test:443"});
+        let body = "";
+        req.setEncoding("utf8");
+        req.on("error", reject);
+        req.on("response", (headers) => {
+            try { assert.equal(headers[":status"], 200); } catch (error) { reject(error); }
+        });
+        req.on("data", (data) => { body += data; });
+        req.on("end", () => {
+            try {
+                const result = JSON.parse(body);
+                assert.equal(result.host, "host-port.example.test:443");
+                assert.equal(result.path, path);
+                assert.equal(client.alpnProtocol, "h2");
+                resolve();
+            } catch (error) { reject(error); }
+        });
+        req.end();
+    })));
+    console.log("PASS HTTP/2: 24 multiplexed streams through generated default/custom locations");
+} finally {
+    clearTimeout(timeout);
+    client.destroy();
+}
 '''
 
 
@@ -167,6 +207,12 @@ def check_image(image):
         docker("exec", name, "nginx", "-t")
         docker("exec", name, "nginx", "-s", "reload")
         wait_for_generated_host(name)
+        for tls in (False, True):
+            status, _, body = request(name, tls, path="/lua-check",
+                                      headers={"Host": "host-port.example.test"})
+            assert status == 200 and body.strip() == b"lua-ok", (status, body)
+        subprocess.run(["docker", "exec", "-i", name, "node", "--input-type=module"],
+                       input=HTTP2, text=True, check=True, timeout=30)
         for tls, authorities in [
             (False, ["host-port.example.test", "host-port.example.test:80",
                      "host-port.example.test:232"]),
@@ -226,7 +272,8 @@ def check_image(image):
         print(json.dumps({"image": image, "cases": checked, "nginx": "passed",
                           "default_and_custom_locations": "passed", "http_and_https": "passed",
                           "origin_and_referer_validation": "passed", "missing_host_fallback": "passed", "cached_asset_cases": cache_cases,
-                          "cache_port_isolation_and_hits": "passed", "generated_host_readiness": "passed"}),
+                          "cache_port_isolation_and_hits": "passed", "generated_host_readiness": "passed",
+                          "lua_runtime": "passed", "http2_multiplexed_streams": 24}),
               flush=True)
     except Exception:
         subprocess.run(["docker", "logs", "--tail", "30", name], check=False)
