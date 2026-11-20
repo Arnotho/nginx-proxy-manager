@@ -1,0 +1,67 @@
+#!/bin/bash
+set -euo pipefail
+
+# Keep OpenResty's Lua/modules and ABI; backport the NGINX 1.31.9 source fixes.
+# Sources, checksums, exclusions and upgrade instructions: docs/nginx-security.md.
+OPENRESTY_VERSION=1.31.8.1
+GEOIP2_COMMIT=445df24ef3781e488cee3dfe8a1e111997fc1dfe
+BUILD_NAME=npm-nginx-1.31.9-backport
+
+apt-get update
+apt-get install -y --no-install-recommends libpcre2-dev libssl-dev zlib1g-dev libmaxminddb-dev
+
+mkdir -p /tmp/nginx-security
+cd /tmp/nginx-security
+curl -fsSL --retry 3 "https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz" -o openresty.tar.gz
+curl -fsSL --retry 3 "https://github.com/leev/ngx_http_geoip2_module/archive/${GEOIP2_COMMIT}.tar.gz" -o geoip2.tar.gz
+sha256sum -c <<'CHECKSUMS'
+b569c63b420f80a4ac8466f2deffe73ed93ab760026532e039c3658409a997f4  openresty.tar.gz
+5e2113ed09cdd710908df8c6d1630616eeacb9216ef8705a06c25733394ddf28  geoip2.tar.gz
+b558e870b82621bc6a4edc665a55bfa2ec0073b5884abcb14864a5802edf6ed7  /tmp/nginx-1.31.9.patch
+CHECKSUMS
+tar -xzf openresty.tar.gz
+tar -xzf geoip2.tar.gz
+
+# Exclusion must precede inclusion: git apply uses the first matching rule.
+# Preserve OpenResty's truthful version header; omit upstream release metadata.
+git -C "openresty-${OPENRESTY_VERSION}/bundle/nginx-1.31.8" apply \
+	--exclude=src/core/nginx.h --include='src/*' /tmp/nginx-1.31.9.patch
+
+cd "openresty-${OPENRESTY_VERSION}"
+./configure \
+	--prefix=/etc/nginx \
+	--with-luajit=/etc/nginx/luajit \
+	--build="${BUILD_NAME}" \
+	--sbin-path=/usr/sbin/nginx \
+	--modules-path=/usr/lib/nginx/modules \
+	--conf-path=/etc/nginx/nginx.conf \
+	--error-log-path=/var/log/nginx/error.log \
+	--http-log-path=/var/log/nginx/access.log \
+	--pid-path=/var/run/nginx.pid \
+	--lock-path=/var/run/nginx.lock \
+	--http-client-body-temp-path=/var/cache/nginx/client_temp \
+	--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+	--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+	--http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+	--http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+	--user=nginx --group=nginx \
+	--with-compat --with-threads \
+	--with-http_addition_module --with-http_auth_request_module \
+	--with-http_dav_module --with-http_flv_module --with-http_gunzip_module \
+	--with-http_gzip_static_module --with-http_mp4_module \
+	--with-http_random_index_module --with-http_realip_module \
+	--with-http_secure_link_module --with-http_slice_module \
+	--with-http_ssl_module --with-http_stub_status_module --with-http_sub_module \
+	--with-http_v2_module --with-http_v3_module \
+	--with-mail --with-mail_ssl_module \
+	--with-stream --with-stream_realip_module --with-stream_ssl_module \
+	--with-stream_ssl_preread_module \
+	--add-dynamic-module="/tmp/nginx-security/ngx_http_geoip2_module-${GEOIP2_COMMIT}"
+make -j"$(nproc)"
+make install DESTDIR=/tmp/nginx-security/install
+
+# Only the rebuilt binary and its matching modules enter the runtime image.
+mkdir -p /out/sbin /out/modules
+cp /tmp/nginx-security/install/usr/sbin/nginx /out/sbin/
+cp /tmp/nginx-security/install/usr/lib/nginx/modules/*.so /out/modules/
+/out/sbin/nginx -V 2>&1 | grep -F "${BUILD_NAME}"

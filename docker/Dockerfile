@@ -3,9 +3,18 @@
 
 # This file assumes that the frontend has been built using ./scripts/frontend-build
 
-ARG BASE_IMAGE=nginxproxymanager/nginx-full:certbot-node
+ARG BASE_IMAGE=nginxproxymanager/nginx-full:certbot-node@sha256:160438ca30f5d290dcc878f9fe32ecb142739a477bd6a508b852cc5a31f22dec
+FROM $BASE_IMAGE AS nginx-builder
+COPY docker/scripts/build-nginx-security /tmp/build-nginx-security
+COPY docker/patches/nginx-1.31.9.patch /tmp/nginx-1.31.9.patch
+RUN bash /tmp/build-nginx-security
+
+FROM $BASE_IMAGE AS nginx-base
+COPY --from=nginx-builder /out/sbin/nginx /usr/sbin/nginx
+COPY --from=nginx-builder /out/modules/ /usr/lib/nginx/modules/
+
 FROM nginxproxymanager/testca AS testca
-FROM $BASE_IMAGE
+FROM nginx-base
 
 ARG TARGETPLATFORM
 ARG BUILD_VERSION

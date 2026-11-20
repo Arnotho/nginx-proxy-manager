@@ -1,5 +1,13 @@
+ARG BASE_IMAGE=nginxproxymanager/nginx-full:certbot-node@sha256:160438ca30f5d290dcc878f9fe32ecb142739a477bd6a508b852cc5a31f22dec
+FROM $BASE_IMAGE AS nginx-builder
+COPY scripts/build-nginx-security /tmp/build-nginx-security
+COPY patches/nginx-1.31.9.patch /tmp/nginx-1.31.9.patch
+RUN bash /tmp/build-nginx-security
+
 FROM nginxproxymanager/testca AS testca
-FROM nginxproxymanager/nginx-full:certbot-node
+FROM $BASE_IMAGE
+COPY --from=nginx-builder /out/sbin/nginx /usr/sbin/nginx
+COPY --from=nginx-builder /out/modules/ /usr/lib/nginx/modules/
 LABEL maintainer="Jamie Curnow <jc@jc21.com>"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

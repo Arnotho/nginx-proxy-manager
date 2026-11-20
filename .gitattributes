@@ -5,3 +5,5 @@
 *.ico binary
 *.woff binary
 *.woff2 binary
+# Preserve the byte-for-byte upstream security diff, including context spaces.
+docker/patches/*.patch -whitespace
